@@ -43,7 +43,7 @@ class Canvas extends JPanel implements KeyListener{
 
         // Load the sprite image
         try {
-            spriteImage = ImageIO.read(new File("Particle-Simulator/Particle_Simulator/src/sprite/sprite.png"));
+            spriteImage = ImageIO.read(new File("STDISCM-Problem-Set-3-main/Particle-Simulator/Particle_Simulator/src/sprite/sprite.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
