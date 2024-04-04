@@ -2,17 +2,18 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 
 class Canvas extends JPanel implements KeyListener{
     private List<Particle> particles;
-    private List<Particle> explorerParticles;
+    private List<ExplorerHandler> explorerHandlers;
     private boolean explorerMode = false;
     private Particle explorerSprite;
     private Particle developerSprite;
@@ -29,10 +30,12 @@ class Canvas extends JPanel implements KeyListener{
     private JFrame frame;
     private boolean explorerSpawned = false;
 
+    private static final int PORT = 12345;
+    private ServerSocket serverSocket;
 
     Canvas() {
         particles = new ArrayList<>();
-        explorerParticles = new ArrayList<>();
+        explorerHandlers = new ArrayList<>();
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         addKeyListener(this);
         setFocusable(true);
@@ -45,9 +48,17 @@ class Canvas extends JPanel implements KeyListener{
             e.printStackTrace();
         }
 
+        try {
+            serverSocket = new ServerSocket(PORT);
+            System.out.println("Server started. Waiting for clients...");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
         executorService.scheduleAtFixedRate(this::calculateFPS, 0, 500, TimeUnit.MILLISECONDS);
     }
+
 
     boolean isExplorerMode() {
         return explorerMode;
@@ -59,6 +70,18 @@ class Canvas extends JPanel implements KeyListener{
             explorerSprite = new Particle(100, 100, 0, 0);
             explorerSpawned = true;
         }
+    }
+
+    // implement method to send data to all explorer clients
+    private void sendDataToExplorers(String data) {
+        for (ExplorerHandler handler : explorerHandlers) {
+            handler.sendData(data);
+        }
+    }
+
+    // implement method to handle explorer disconnection
+    void removeExplorerHandler(ExplorerHandler handler) {
+        explorerHandlers.remove(handler);
     }
 
     public void moveExplorerSprite(int dx, int dy) {
@@ -76,24 +99,28 @@ class Canvas extends JPanel implements KeyListener{
                 case KeyEvent.VK_W:
                     if (explorerSprite.y - SPRITE_SIZE > 0) {
                         moveExplorerSprite(0, -5);
+                        sendDataToExplorers("MOVE_UP");
                     }
                     break;
                 case KeyEvent.VK_DOWN:
                 case KeyEvent.VK_S:
                     if (explorerSprite.y + SPRITE_SIZE < HEIGHT) {
                         moveExplorerSprite(0, 5);
+                        sendDataToExplorers("MOVE_DOWN");
                     }
                     break;
                 case KeyEvent.VK_LEFT:
                 case KeyEvent.VK_A:
                     if (explorerSprite.x - SPRITE_SIZE > 0) {
                         moveExplorerSprite(-5, 0);
+                        sendDataToExplorers("MOVE_LEFT");
                     }
                     break;
                 case KeyEvent.VK_RIGHT:
                 case KeyEvent.VK_D:
                     if (explorerSprite.x + SPRITE_SIZE < WIDTH) {
                         moveExplorerSprite(5, 0);
+                        sendDataToExplorers("MOVE_RIGHT");
                     }
                     break;
             }
@@ -123,7 +150,7 @@ class Canvas extends JPanel implements KeyListener{
             frame.setTitle("Particle Simulator | FPS: " + calculateFPS());
         else
             frame.setTitle("Particle Simulator | FPS: " + calculateFPS() + " | X: "
-            + explorerSprite.x + " Y: " + explorerSprite.y);
+                    + explorerSprite.x + " Y: " + explorerSprite.y);
     }
 
     private int calculateFPS() {
@@ -248,6 +275,47 @@ class Canvas extends JPanel implements KeyListener{
             Thread.sleep(sleepTime);
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    // Inner class to handle communication with explorer clients
+    class ExplorerHandler extends Thread {
+        private Socket clientSocket;
+        private PrintWriter out;
+        private BufferedReader in;
+
+        ExplorerHandler(Socket socket) {
+            this.clientSocket = socket;
+        }
+
+        public void run() {
+            try {
+                out = new PrintWriter(clientSocket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+
+                explorerHandlers.add(this);
+
+                // need to implement sending and receiving data from client
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    in.close();
+                    out.close();
+                    clientSocket.close();
+                    // Remove this handler from the list
+                    removeExplorerHandler(this);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        // implement method to send data to this client
+        void sendData(String data) {
+            out.println(data);
         }
     }
 }

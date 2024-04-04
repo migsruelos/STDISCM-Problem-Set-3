@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Particle-Simulator">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/STDISCM-Problem-Set-3-main/Particle-Simulator/out/artifacts/Particle_Simulator_jar/Particle-Simulator.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
