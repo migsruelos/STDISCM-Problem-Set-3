@@ -1,3 +1,4 @@
+import java.awt.event.KeyEvent;
 import java.io.*;
 import java.net.*;
 
@@ -57,6 +58,32 @@ public class ExplorerClient {
     public void sendMovementCommand(String command) {
         out.println(command);
     }
+
+    public void keyPressed(KeyEvent e) {
+        int keyCode = e.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.VK_UP:
+            case KeyEvent.VK_W:
+                sendMovementCommand("MOVE_UP");
+                break;
+            case KeyEvent.VK_DOWN:
+            case KeyEvent.VK_S:
+                sendMovementCommand("MOVE_DOWN");
+                break;
+            case KeyEvent.VK_LEFT:
+            case KeyEvent.VK_A:
+                sendMovementCommand("MOVE_LEFT");
+                break;
+            case KeyEvent.VK_RIGHT:
+            case KeyEvent.VK_D:
+                sendMovementCommand("MOVE_RIGHT");
+                break;
+        }
+    }
+
+
+    public void keyTyped(KeyEvent e) {}
+    public void keyReleased(KeyEvent e) {}
 
     public static void main(String[] args) {
         String serverAddress = "localhost"; // change to the actual server address
