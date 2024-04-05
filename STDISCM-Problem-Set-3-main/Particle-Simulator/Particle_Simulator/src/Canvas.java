@@ -29,6 +29,9 @@ public class Canvas extends JPanel implements KeyListener {
     private static final int PORT = 12345;
     private ServerSocket serverSocket;
 
+    private final int PERIPHERY_WIDTH = 33;
+    private final int PERIPHERY_HEIGHT = 19;
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Canvas::new);
     }
@@ -195,17 +198,28 @@ public class Canvas extends JPanel implements KeyListener {
         for (Particle particle : particles) {
             int distanceX = (int) (particle.x - explorerSprite.x);
             int distanceY = (int) (particle.y - explorerSprite.y);
-            if(Math.abs(distanceX) > WIDTH/2 || Math.abs(distanceY) > HEIGHT/2)
+            if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
                 continue;
 
-            g.fillOval((int) (WIDTH / 2 + distanceX), (int) (HEIGHT / 2 + distanceY), 10, 10);
+            g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH),
+                (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT), 10, 10);
         }
 
         if (explorerSpawned && spriteImage != null) {
-            g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE / 2, HEIGHT / 2 - SPRITE_SIZE / 2,
-                    SPRITE_SIZE, SPRITE_SIZE, null);
+            g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE * 10, HEIGHT / 2 - SPRITE_SIZE * 10,
+                SPRITE_SIZE*20, SPRITE_SIZE*20, null);
         }
     }
+            /*if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
+                continue;
+
+            g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH),
+                (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT), 10, 10);
+        }
+
+        if (explorerSpawned && spriteImage != null) {
+            g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE * 10, HEIGHT / 2 - SPRITE_SIZE * 10,
+                SPRITE_SIZE*20, SPRITE_SIZE*20, null);*/
 
     private void updateFPS() {
         fps = frameCount * 2;
