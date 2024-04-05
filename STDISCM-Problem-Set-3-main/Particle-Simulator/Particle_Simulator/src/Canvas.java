@@ -50,7 +50,7 @@ class Canvas extends JPanel implements KeyListener{
 
         try {
             serverSocket = new ServerSocket(PORT);
-            System.out.println("Server started. Waiting for clients...");
+            System.out.println("Server started.");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -278,7 +278,6 @@ class Canvas extends JPanel implements KeyListener{
         }
     }
 
-    // Inner class to handle communication with explorer clients
     class ExplorerHandler extends Thread {
         private Socket clientSocket;
         private PrintWriter out;
