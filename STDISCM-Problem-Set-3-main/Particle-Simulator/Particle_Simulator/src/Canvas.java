@@ -11,27 +11,27 @@ import java.util.concurrent.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 
-class Canvas extends JPanel implements KeyListener{
+public class Canvas extends JPanel implements KeyListener {
     private List<Particle> particles;
     private List<ExplorerHandler> explorerHandlers;
     private boolean explorerMode = false;
     private Particle explorerSprite;
-    private Particle developerSprite;
     private BufferedImage spriteImage;
     private int frameCount = 0;
     private int fps;
     private long lastFPSTime = System.currentTimeMillis();
     private final int WIDTH = 1280;
     private final int HEIGHT = 720;
-    private final int PERIPHERY_WIDTH = 33;
-    private final int PERIPHERY_HEIGHT = 19;
     private final int SPRITE_SIZE = 30;
-    private final int PARTICLE_SIZE = 10;
     private JFrame frame;
     private boolean explorerSpawned = false;
 
     private static final int PORT = 12345;
     private ServerSocket serverSocket;
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(Canvas::new);
+    }
 
     Canvas() {
         particles = new ArrayList<>();
@@ -57,8 +57,25 @@ class Canvas extends JPanel implements KeyListener{
 
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
         executorService.scheduleAtFixedRate(this::calculateFPS, 0, 500, TimeUnit.MILLISECONDS);
+
+        startServer();
     }
 
+    private void startServer() {
+        new Thread(() -> {
+            while (true) {
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    System.out.println("Client connected.");
+                    ExplorerHandler explorerHandler = new ExplorerHandler(clientSocket);
+                    explorerHandler.start();
+                    explorerHandlers.add(explorerHandler);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
 
     boolean isExplorerMode() {
         return explorerMode;
@@ -72,14 +89,12 @@ class Canvas extends JPanel implements KeyListener{
         }
     }
 
-    // implement method to send data to all explorer clients
     private void sendDataToExplorers(String data) {
         for (ExplorerHandler handler : explorerHandlers) {
             handler.sendData(data);
         }
     }
 
-    // implement method to handle explorer disconnection
     void removeExplorerHandler(ExplorerHandler handler) {
         explorerHandlers.remove(handler);
     }
@@ -90,6 +105,7 @@ class Canvas extends JPanel implements KeyListener{
             explorerSprite.y += dy;
         }
     }
+
     @Override
     public void keyPressed(KeyEvent e) {
         if (explorerMode) {
@@ -127,7 +143,6 @@ class Canvas extends JPanel implements KeyListener{
         }
     }
 
-
     @Override
     public void keyTyped(KeyEvent e) {}
 
@@ -140,6 +155,56 @@ class Canvas extends JPanel implements KeyListener{
 
     public void passFrame(JFrame f){
         frame = f;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        Image offscreen = createImage(getWidth(), getHeight());
+        Graphics2D offscreenGraphics = (Graphics2D) offscreen.getGraphics();
+        offscreenGraphics.setColor(Color.BLACK);
+        offscreenGraphics.fillRect(0,0, WIDTH, HEIGHT);
+
+        if (explorerMode) {
+            renderExplorerMode(offscreenGraphics);
+        } else {
+            renderDeveloperMode(offscreenGraphics);
+        }
+
+        calculateFPS();
+
+        g.drawImage(offscreen, 0, 0, this);
+    }
+
+    private void renderDeveloperMode(Graphics offscreenGraphics) {
+        offscreenGraphics.setColor(Color.GREEN);
+        for (Particle particle : particles) {
+            offscreenGraphics.fillOval((int) particle.x - 5, (int) particle.y - 5, 10, 10);
+        }
+
+        if (explorerSpawned && spriteImage != null) {
+            int spriteX = (int) explorerSprite.x - SPRITE_SIZE / 2;
+            int spriteY = (int) explorerSprite.y - SPRITE_SIZE / 2;
+            offscreenGraphics.drawImage(spriteImage, spriteX, spriteY, SPRITE_SIZE, SPRITE_SIZE, null);
+        }
+    }
+
+    private void renderExplorerMode(Graphics g) {
+        g.setColor(Color.GREEN);
+        for (Particle particle : particles) {
+            int distanceX = (int) (particle.x - explorerSprite.x);
+            int distanceY = (int) (particle.y - explorerSprite.y);
+            if(Math.abs(distanceX) > WIDTH/2 || Math.abs(distanceY) > HEIGHT/2)
+                continue;
+
+            g.fillOval((int) (WIDTH / 2 + distanceX), (int) (HEIGHT / 2 + distanceY), 10, 10);
+        }
+
+        if (explorerSpawned && spriteImage != null) {
+            g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE / 2, HEIGHT / 2 - SPRITE_SIZE / 2,
+                    SPRITE_SIZE, SPRITE_SIZE, null);
+        }
     }
 
     private void updateFPS() {
@@ -159,8 +224,7 @@ class Canvas extends JPanel implements KeyListener{
 
         frameCount++;
 
-        // update FPS every 0.5 seconds
-        if (elapsedTime >= 500) {
+        if (elapsedTime >= 1000) {
             updateFPS();
         }
 
@@ -196,63 +260,41 @@ class Canvas extends JPanel implements KeyListener{
         }
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
+    private class ExplorerHandler extends Thread {
+        private Socket socket;
+        private PrintWriter out;
 
-        Image offscreen = createImage(getWidth(), getHeight());
-        Graphics2D offscreenGraphics = (Graphics2D) offscreen.getGraphics();
-        offscreenGraphics.setColor(Color.BLACK);
-        offscreenGraphics.fillRect(0,0, WIDTH, HEIGHT);
-
-        if (explorerMode) {
-            renderExplorerMode(offscreenGraphics);
-        } else {
-            renderDeveloperMode(offscreenGraphics);
+        ExplorerHandler(Socket socket) {
+            this.socket = socket;
+            try {
+                out = new PrintWriter(socket.getOutputStream(), true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
-        //IDK why but this is needed for more accurate fps measurement???
-        calculateFPS();
-
-        g.drawImage(offscreen, 0, 0, this);
-    }
-
-    private void renderDeveloperMode(Graphics offscreenGraphics) {
-        offscreenGraphics.setColor(Color.GREEN);
-        for (Particle particle : particles) {
-            offscreenGraphics.fillOval((int) particle.x - 5, (int) particle.y - 5, 10, 10);
+        @Override
+        public void run() {
+            BufferedReader in;
+            try {
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    if (inputLine.equals("EXIT")) {
+                        System.out.println("Client disconnected.");
+                        removeExplorerHandler(this);
+                        break;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
-        //Render sprite in actual location if spawned
-        if (explorerSpawned && spriteImage != null) {
-            int spriteX = (int) explorerSprite.x - SPRITE_SIZE / 2;
-            int spriteY = (int) explorerSprite.y - SPRITE_SIZE / 2;
-            offscreenGraphics.drawImage(spriteImage, spriteX, spriteY, SPRITE_SIZE, SPRITE_SIZE, null);
-        }
-    }
-
-    private void renderExplorerMode(Graphics g) {
-        // Render particles within the sprite's periphery
-        g.setColor(Color.GREEN);
-        for (Particle particle : particles) {
-            int distanceX = (int) (particle.x - explorerSprite.x);
-            int distanceY = (int) (particle.y - explorerSprite.y);
-            if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
-                continue; //Skip rendering particle if distance greater than periphery
-
-            g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH),
-                    (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT), 10, 10);
-        }
-
-        // Render sprite image centered in the periphery
-        if (explorerSpawned && spriteImage != null) {
-            //Render this in center at all times
-            g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE * 10, HEIGHT / 2 - SPRITE_SIZE * 10,
-                    SPRITE_SIZE*20, SPRITE_SIZE*20, null);
+        void sendData(String data) {
+            out.println(data);
         }
     }
-
-
     void update() {
         calculateFPS();
         double deltaTime = 0.05;
@@ -275,46 +317,6 @@ class Canvas extends JPanel implements KeyListener{
             Thread.sleep(sleepTime);
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }
-    }
-
-    class ExplorerHandler extends Thread {
-        private Socket clientSocket;
-        private PrintWriter out;
-        private BufferedReader in;
-
-        ExplorerHandler(Socket socket) {
-            this.clientSocket = socket;
-        }
-
-        public void run() {
-            try {
-                out = new PrintWriter(clientSocket.getOutputStream(), true);
-                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-
-                explorerHandlers.add(this);
-
-                // need to implement sending and receiving data from client
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    in.close();
-                    out.close();
-                    clientSocket.close();
-                    // Remove this handler from the list
-                    removeExplorerHandler(this);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        // implement method to send data to this client
-        void sendData(String data) {
-            out.println(data);
         }
     }
 }

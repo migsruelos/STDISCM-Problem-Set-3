@@ -11,6 +11,9 @@ public class ExplorerClient {
             socket = new Socket(serverAddress, serverPort);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
+
+            // Send a message to the server to indicate that the client wants to enter explorer mode
+            out.println("ENTER_EXPLORER_MODE");
         } catch (IOException e) {
             e.printStackTrace();
         }
