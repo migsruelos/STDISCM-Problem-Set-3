@@ -42,6 +42,7 @@ public class ExplorerClient extends JFrame implements KeyListener {
 
         public ECanvas(){
             particles = new ArrayList<>();
+            explorers = new ArrayList<>();
             setPreferredSize(new Dimension(WIDTH, HEIGHT));
             setFocusable(true);
             requestFocusInWindow();
@@ -57,25 +58,41 @@ public class ExplorerClient extends JFrame implements KeyListener {
         }
 
         private void renderExplorerMode(Graphics g) {
-            g.setColor(Color.GREEN);
-            for (Particle particle : particles) {
-                int distanceX = (int) (particle.x - explorerSprite.x);
-                int distanceY = (int) (particle.y - explorerSprite.y);
+            try {
+                g.setColor(Color.GREEN);
+                for (Particle particle : particles) {
+                    int distanceX = (int) (particle.x - explorerSprite.x);
+                    int distanceY = (int) (particle.y - explorerSprite.y);
+                    distanceX = (int) distanceX * (WIDTH/PERIPHERY_WIDTH) + (WIDTH/2);
+                    distanceY = (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT) + (HEIGHT/2);
 
-                //TODO: Move this calc to server, server should only send particles that can be rendered
-                if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
-                    continue;
+                    //Extra assurance against improper rendering
+                    if(distanceX > WIDTH || distanceX < 0)
+                        continue;
+                    if(distanceY > HEIGHT || distanceY < 0)
+                        continue;
 
-                g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH) + (WIDTH/2),
-                        (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT) + (HEIGHT/2), 10, 10);
+                    g.fillOval(distanceX, distanceY, 10, 10);
+                }
+
+                //Code that draws other explorer sprites
+                for(Particle explorer: explorers){
+                    int distanceX = (int) (explorer.x - explorerSprite.x);
+                    int distanceY = (int) (explorer.y - explorerSprite.y);
+                    distanceX = (int) distanceX * (WIDTH/PERIPHERY_WIDTH) + (WIDTH/2);
+                    distanceY = (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT) + (HEIGHT/2);
+
+                    g.drawImage(spriteImage, distanceX - SPRITE_SIZE * 4, distanceY - SPRITE_SIZE * 4,
+                            SPRITE_SIZE*8, SPRITE_SIZE*8, null);
+                }
+
+                if (explorerSpawned && spriteImage != null) {
+                    g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE * 4, HEIGHT / 2 - SPRITE_SIZE * 4,
+                            SPRITE_SIZE*8, SPRITE_SIZE*8, null);
+                }
+            } catch (Exception ignored) {
+
             }
-
-            if (explorerSpawned && spriteImage != null) {
-                g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE * 4, HEIGHT / 2 - SPRITE_SIZE * 4,
-                        SPRITE_SIZE*8, SPRITE_SIZE*8, null);
-            }
-
-            //TODO: Add code that draws other explorer sprites
         }
 
         private void updateFPS() {
@@ -106,6 +123,7 @@ public class ExplorerClient extends JFrame implements KeyListener {
 
             Image offscreen = createImage(getWidth(), getHeight());
             Graphics2D offscreenGraphics = (Graphics2D) offscreen.getGraphics();
+            offscreenGraphics.clipRect(0, 0, WIDTH, HEIGHT);
             offscreenGraphics.setColor(Color.BLACK);
             offscreenGraphics.fillRect(0,0, WIDTH, HEIGHT);
 
@@ -208,6 +226,13 @@ public class ExplorerClient extends JFrame implements KeyListener {
                 // Process the received data
                 // For example, you might receive messages indicating explorer movement or other updates
                 // Update the client's explorer sprite accordingly
+
+                //Clear loaded particles and explorers before getting new data
+                if(particles != null)
+                    particles.clear();
+                if(explorers != null)
+                    explorers.clear();
+
                 String[] temp = inputLine.split(" ");
 
                 //Determine message type and update accordingly
@@ -215,6 +240,17 @@ public class ExplorerClient extends JFrame implements KeyListener {
                     case "MOVE": //Message involves explorer movement
                         explorerSprite.x = Double.parseDouble(temp[1]);
                         explorerSprite.y = Double.parseDouble(temp[2]);
+                        break;
+                    case "STATE": //Message involves state of sim
+                        for(int i = 1; i < temp.length; i += 3){
+                            //Check if data is a particle or an explorer
+                            if(temp[i].equals("P")){
+                                particles.add(new Particle(Double.parseDouble(temp[i+1]), Double.parseDouble(temp[i+2]), 0, 0));
+                            }
+                            else if(temp[i].equals("E")){
+                                explorers.add(new Particle(Double.parseDouble(temp[i+1]), Double.parseDouble(temp[i+2]), 0, 0));
+                            }
+                        }
                         break;
                 }
             }

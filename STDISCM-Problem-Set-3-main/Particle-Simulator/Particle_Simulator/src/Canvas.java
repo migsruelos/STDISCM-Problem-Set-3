@@ -1,7 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -62,11 +60,13 @@ public class Canvas extends JPanel {
 
     private void startServer() {
         new Thread(() -> {
+            int counter = 0;
             while (true) {
                 try {
                     Socket clientSocket = serverSocket.accept();
                     System.out.println("Client connected.");
-                    ExplorerHandler explorerHandler = new ExplorerHandler(clientSocket);
+                    ExplorerHandler explorerHandler = new ExplorerHandler(clientSocket, counter);
+                    counter++;
                     explorerHandler.start();
                     explorerHandlers.add(explorerHandler);
                 } catch (IOException e) {
@@ -96,6 +96,7 @@ public class Canvas extends JPanel {
 
         Image offscreen = createImage(getWidth(), getHeight());
         Graphics2D offscreenGraphics = (Graphics2D) offscreen.getGraphics();
+        offscreenGraphics.clipRect(0, 0, WIDTH, HEIGHT);
         offscreenGraphics.setColor(Color.BLACK);
         offscreenGraphics.fillRect(0,0, WIDTH, HEIGHT);
 
@@ -169,17 +170,76 @@ public class Canvas extends JPanel {
     }
 
     private class ExplorerHandler extends Thread {
+        public int ID; //To prevent sending own data
         public Particle explorer; //Particle of current explorer
         private Socket socket, replySocket;
         private PrintWriter out;
 
-        ExplorerHandler(Socket socket) {
+        ExplorerHandler(Socket socket, int id) {
             this.socket = socket;
+            ID = id;
         }
 
         @Override
         public void run() {
             BufferedReader in;
+
+            //Create a thread that sends particle and explorer coords to client
+            new Thread(() -> {
+                StringBuilder res = new StringBuilder();
+                while(true){
+                    try {
+                        res.append("STATE ");
+                        //Add particles
+                        for(Particle p: particles){
+                            //Check if in periphery before adding to message
+                            int distanceX = (int) (p.x - explorer.x);
+                            int distanceY = (int) (p.y - explorer.y);
+
+                            if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
+                                continue;
+
+                            res.append("P "); //Add data type
+                            res.append(p.x).append(" "); //Add x-coord
+                            res.append(p.y).append(" "); //Add y-coord
+                        }
+                        //Add explorers
+                        for(int i = 0; i < explorerHandlers.size(); i++){
+                            ExplorerHandler e = explorerHandlers.get(i);
+
+                            //Check if handler id is the same, skip if so
+                            if(e.ID == ID)
+                                continue;
+                            //Check if in periphery before adding to message
+                            int distanceX = (int) (e.explorer.x - explorer.x);
+                            int distanceY = (int) (e.explorer.y - explorer.y);
+
+                            if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
+                                continue;
+
+                            res.append("E "); //Add data type
+                            res.append(e.explorer.x).append(" "); //Add x-coord
+                            res.append(e.explorer.y).append(" "); //Add y-coord
+                        }
+
+                        //Send to client
+                        sendData(res.toString());
+
+                        //Clear res
+                        res = new StringBuilder();
+
+                        //Sleep so data is not sent too often
+                        try {
+                            Thread.sleep(1000/60);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } catch (RuntimeException ignored) {
+
+                    }
+                }
+            }).start();
+
             try {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String inputLine;
