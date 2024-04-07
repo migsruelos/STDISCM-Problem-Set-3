@@ -222,7 +222,7 @@ public class Canvas extends JPanel implements KeyListener {
                 SPRITE_SIZE*20, SPRITE_SIZE*20, null);*/
 
     private void updateFPS() {
-        fps = frameCount * 2;
+        fps = frameCount;
         frameCount = 0;
         lastFPSTime = System.currentTimeMillis();
         if(!explorerSpawned)
