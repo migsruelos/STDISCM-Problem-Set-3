@@ -17,6 +17,8 @@ public class ExplorerClient extends JFrame implements KeyListener {
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
+    private ServerSocket serverSocket;
+    private Socket replySocket;
 
     //UI STUFF
     JPanel panel;
@@ -145,15 +147,27 @@ public class ExplorerClient extends JFrame implements KeyListener {
     private int fps;
     private long lastFPSTime = System.currentTimeMillis();
 
-    public ExplorerClient(String serverAddress, int serverPort, int startX, int startY) {
+    public ExplorerClient(int clientPort, String serverAddress, int serverPort, int startX, int startY) {
         //Connection
         try {
+            //Setup reply server
+            new Thread(() -> {
+                System.out.println("Listening on port: " + clientPort);
+                try {
+                    serverSocket = new ServerSocket(clientPort);
+                    replySocket = serverSocket.accept(); //Get socket for server replies
+                    in = new BufferedReader(new InputStreamReader(replySocket.getInputStream()));
+                    start();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }).start();
+
             socket = new Socket(serverAddress, serverPort);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
 
-            // Send a message to the server containg explorer spawn point
-            out.println(startX + " " + startX);
+            // Send a message to the server contaning explorer spawn point and port
+            out.println(clientPort + " " + startX + " " + startX);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -178,7 +192,7 @@ public class ExplorerClient extends JFrame implements KeyListener {
         setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
         setVisible(true);
 
-        //Load Explorer client particle TODO: Maybe add a prompt for coords on where to spawn?
+        //Load Explorer client particle
         explorerSprite = new Particle(startX, startY, 0, 0);
 
         Timer timer = new Timer(15, e -> {
@@ -199,8 +213,8 @@ public class ExplorerClient extends JFrame implements KeyListener {
                 //Determine message type and update accordingly
                 switch (temp[0]){
                     case "MOVE": //Message involves explorer movement
-                        explorerSprite.x = Integer.parseInt(temp[1]);
-                        explorerSprite.y = Integer.parseInt(temp[2]);
+                        explorerSprite.x = Double.parseDouble(temp[1]);
+                        explorerSprite.y = Double.parseDouble(temp[2]);
                         break;
                 }
             }
@@ -253,8 +267,10 @@ public class ExplorerClient extends JFrame implements KeyListener {
         Scanner s = new Scanner(System.in);
 
         //Get inputs on IP, Port, and starting coords
+        System.out.print("Enter Client Port: ");
+        int port = s.nextInt();
         System.out.print("Enter Server IP: ");
-        String serverAddress = s.nextLine(); // change to the actual server address
+        String serverAddress = s.next(); // change to the actual server address
         System.out.print("Enter Server Port: ");
         int serverPort = s.nextInt(); // change to the actual server port
         System.out.print("Enter Starting X-coordinate: ");
@@ -272,7 +288,6 @@ public class ExplorerClient extends JFrame implements KeyListener {
         else if(y < 0)
             y = 0;
 
-        ExplorerClient client = new ExplorerClient(serverAddress, serverPort, x, y);
-        client.start(); //Start receiving data
+        ExplorerClient client = new ExplorerClient(port, serverAddress, serverPort, x, y);
     }
 }

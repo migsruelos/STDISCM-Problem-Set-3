@@ -170,16 +170,11 @@ public class Canvas extends JPanel {
 
     private class ExplorerHandler extends Thread {
         public Particle explorer; //Particle of current explorer
-        private Socket socket;
+        private Socket socket, replySocket;
         private PrintWriter out;
 
         ExplorerHandler(Socket socket) {
             this.socket = socket;
-            try {
-                out = new PrintWriter(socket.getOutputStream(), true);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
 
         @Override
@@ -192,10 +187,15 @@ public class Canvas extends JPanel {
 
                 while ((inputLine = in.readLine()) != null) {
                     if(!spawned){
-                        //Get starting coords of explorer
+                        //Get init data
                         String[] temp = inputLine.split(" ");
-                        //Create explorer
-                        explorer = new Particle(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]) , 0, 0);
+
+                        //Connect reply socket
+                        replySocket = new Socket(socket.getInetAddress(), Integer.parseInt(temp[0])); //Use socket addr and port in message
+                        out = new PrintWriter(replySocket.getOutputStream(), true);
+
+                        //Get starting coords of explorer and create explorer
+                        explorer = new Particle(Integer.parseInt(temp[1]), Integer.parseInt(temp[2]) , 0, 0);
                         spawned = true;
                     }
 
@@ -235,13 +235,25 @@ public class Canvas extends JPanel {
             if (explorer != null) {
                 explorer.x += dx;
                 explorer.y += dy;
+
+                //Bounds
+                if(explorer.x > 1280)
+                    explorer.x = 1280;
+                if(explorer.x < 0)
+                    explorer.x = 0;
+                if(explorer.y > 720)
+                    explorer.y = 720;
+                if(explorer.y < 0)
+                    explorer.y = 0;
+
                 //send coords data back to client
-                //sendData("MOVE" + explorer.x + " " + explorer.y);
+                sendData("MOVE " + explorer.x + " " + explorer.y);
             }
         }
 
         void sendData(String data) {
-            out.println(data);
+            if(out != null)
+                out.println(data);
         }
     }
     void update() {
