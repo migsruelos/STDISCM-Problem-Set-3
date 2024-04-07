@@ -1,13 +1,34 @@
+import javax.swing.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.*;
 import java.net.*;
 
-public class ExplorerClient {
+public class ExplorerClient extends JFrame implements KeyListener {
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
 
+    //UI STUFF
+    JPanel panel;
+    private final int FRAME_WIDTH = 1600;
+    private final int FRAME_HEIGHT = 900;
+    private final int WIDTH = 1280;
+    private final int HEIGHT = 720;
+    private final int PERIPHERY_WIDTH = 33;
+    private final int PERIPHERY_HEIGHT = 19;
+
+    private class ECanvas extends JPanel{
+
+    }
+
+    //FPS stuff
+    private int frameCount = 0;
+    private int fps;
+    private long lastFPSTime = System.currentTimeMillis();
+
     public ExplorerClient(String serverAddress, int serverPort) {
+        //Connection
         try {
             socket = new Socket(serverAddress, serverPort);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -18,6 +39,19 @@ public class ExplorerClient {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        //UI
+        setTitle("Explorer Client | FPS: 0");
+        panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(40, 20, 0, 0));
+
+        add(panel);
+        setSize(FRAME_WIDTH, FRAME_HEIGHT);
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
+        setVisible(true);
     }
 
     public void start() {
@@ -59,6 +93,7 @@ public class ExplorerClient {
         out.println(command);
     }
 
+    @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
         switch (keyCode) {
