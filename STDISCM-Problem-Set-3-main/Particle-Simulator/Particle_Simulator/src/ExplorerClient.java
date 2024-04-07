@@ -58,11 +58,13 @@ public class ExplorerClient extends JFrame implements KeyListener {
             for (Particle particle : particles) {
                 int distanceX = (int) (particle.x - explorerSprite.x);
                 int distanceY = (int) (particle.y - explorerSprite.y);
+
+                //TODO: Move this calc to server, server should only send particles that can be rendered
                 if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
                     continue;
 
-                g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH),
-                        (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT), 10, 10);
+                g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH) + (WIDTH/2),
+                        (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT) + (HEIGHT/2), 10, 10);
             }
 
             if (explorerSpawned && spriteImage != null) {
@@ -172,7 +174,7 @@ public class ExplorerClient extends JFrame implements KeyListener {
         setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
         setVisible(true);
 
-        //Load Explorer client particle TODO: Maybe add a promt for coords on where to spawn?
+        //Load Explorer client particle TODO: Maybe add a prompt for coords on where to spawn?
         explorerSprite = new Particle(500, 300, 0, 0);
 
         Timer timer = new Timer(15, e -> {

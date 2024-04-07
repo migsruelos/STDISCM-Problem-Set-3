@@ -202,8 +202,8 @@ public class Canvas extends JPanel implements KeyListener {
             if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
                 continue;
 
-            g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH),
-                (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT), 10, 10);
+            g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH) + (WIDTH/2),
+                    (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT) + (HEIGHT/2), 10, 10);
         }
 
         if (explorerSpawned && spriteImage != null) {
