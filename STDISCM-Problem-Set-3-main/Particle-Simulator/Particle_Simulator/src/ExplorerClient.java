@@ -69,6 +69,8 @@ public class ExplorerClient extends JFrame implements KeyListener {
                 g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE * 4, HEIGHT / 2 - SPRITE_SIZE * 4,
                         SPRITE_SIZE*8, SPRITE_SIZE*8, null);
             }
+
+            //TODO: Add code that draws other explorer sprites
         }
 
         private void updateFPS() {

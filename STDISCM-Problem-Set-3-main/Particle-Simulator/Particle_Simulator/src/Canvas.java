@@ -13,6 +13,7 @@ import java.awt.image.BufferedImage;
 
 public class Canvas extends JPanel implements KeyListener {
     private List<Particle> particles;
+    private List<Particle> explorers;
     private List<ExplorerHandler> explorerHandlers;
     private boolean explorerMode = false;
     private Particle explorerSprite;
