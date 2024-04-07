@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -144,7 +145,7 @@ public class ExplorerClient extends JFrame implements KeyListener {
     private int fps;
     private long lastFPSTime = System.currentTimeMillis();
 
-    public ExplorerClient(String serverAddress, int serverPort) {
+    public ExplorerClient(String serverAddress, int serverPort, int startX, int startY) {
         //Connection
         try {
             socket = new Socket(serverAddress, serverPort);
@@ -175,7 +176,7 @@ public class ExplorerClient extends JFrame implements KeyListener {
         setVisible(true);
 
         //Load Explorer client particle TODO: Maybe add a prompt for coords on where to spawn?
-        explorerSprite = new Particle(500, 300, 0, 0);
+        explorerSprite = new Particle(startX, startY, 0, 0);
 
         Timer timer = new Timer(15, e -> {
             canvas.update();
@@ -250,9 +251,29 @@ public class ExplorerClient extends JFrame implements KeyListener {
     public void keyReleased(KeyEvent e) {}
 
     public static void main(String[] args) {
-        String serverAddress = "localhost"; // change to the actual server address
-        int serverPort = 12345; // change to the actual server port
-        ExplorerClient client = new ExplorerClient(serverAddress, serverPort);
+        Scanner s = new Scanner(System.in);
+
+        //Get inputs on IP, Port, and starting coords
+        System.out.print("Enter Server IP: ");
+        String serverAddress = s.nextLine(); // change to the actual server address
+        System.out.print("Enter Server Port: ");
+        int serverPort = s.nextInt(); // change to the actual server port
+        System.out.print("Enter Starting X-coordinate: ");
+        int x = s.nextInt();
+        System.out.print("Enter Starting Y-coordinate: ");
+        int y = s.nextInt();
+
+        //Error prevention on coords
+        if(x > 1280)
+            x = 1280;
+        else if(x < 0)
+            x = 0;
+        if(y > 720)
+            y = 720;
+        else if(y < 0)
+            y = 0;
+
+        ExplorerClient client = new ExplorerClient(serverAddress, serverPort, x, y);
         client.start();
     }
 }
