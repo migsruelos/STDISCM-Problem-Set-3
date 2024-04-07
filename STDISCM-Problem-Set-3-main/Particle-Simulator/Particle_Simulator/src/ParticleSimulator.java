@@ -5,7 +5,6 @@ import java.awt.event.KeyListener;
 
 class ParticleSimulator extends JFrame implements KeyListener {
     private Canvas canvas;
-    private JButton switchModeButton;
     private JButton particleByDistanceButton;
     private JButton particleByAngleButton;
     private JButton particleByVelocityButton;
@@ -20,8 +19,6 @@ class ParticleSimulator extends JFrame implements KeyListener {
         panel.setBorder(BorderFactory.createEmptyBorder(40, 20, 0, 0));
         canvas = new Canvas();
         canvas.passFrame(this);
-
-        canvas.addKeyHandler(this);
 
         panel.add(canvas);
 
@@ -52,14 +49,9 @@ class ParticleSimulator extends JFrame implements KeyListener {
             particleByVelocityDialog.setVisible(true);
         });
 
-        switchModeButton = new JButton("Switch Mode (Space)");
-        switchModeButton.setFocusable(false);
-        switchModeButton.addActionListener(e -> toggleMode());
-
         buttonPanel.add(particleByDistanceButton);
         buttonPanel.add(particleByAngleButton);
         buttonPanel.add(particleByVelocityButton);
-        buttonPanel.add(switchModeButton);
 
         panel.add(buttonPanel);
         add(panel);
@@ -76,15 +68,12 @@ class ParticleSimulator extends JFrame implements KeyListener {
     }
 
     private void toggleMode() {
-        canvas.toggleExplorerMode();
-
-        boolean explorerMode = canvas.isExplorerMode();
-        particleByDistanceButton.setEnabled(!explorerMode);
-        particleByDistanceButton.setVisible(!explorerMode);
-        particleByAngleButton.setEnabled(!explorerMode);
-        particleByAngleButton.setVisible(!explorerMode);
-        particleByVelocityButton.setEnabled(!explorerMode);
-        particleByVelocityButton.setVisible(!explorerMode);
+        particleByDistanceButton.setEnabled(true);
+        particleByDistanceButton.setVisible(true);
+        particleByAngleButton.setEnabled(true);
+        particleByAngleButton.setVisible(true);
+        particleByVelocityButton.setEnabled(true);
+        particleByVelocityButton.setVisible(true);
     }
 
     @Override

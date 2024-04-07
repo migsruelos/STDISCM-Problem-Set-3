@@ -152,11 +152,14 @@ public class ExplorerClient extends JFrame implements KeyListener {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
 
-            // Send a message to the server to indicate that the client wants to enter explorer mode
-            out.println("ENTER_EXPLORER_MODE");
+            // Send a message to the server containg explorer spawn point
+            out.println(startX + " " + startX);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        //Inputs
+        addKeyListener(this);
 
         //UI
         setTitle("Explorer Client | FPS: 0");
@@ -191,7 +194,15 @@ public class ExplorerClient extends JFrame implements KeyListener {
                 // Process the received data
                 // For example, you might receive messages indicating explorer movement or other updates
                 // Update the client's explorer sprite accordingly
-                updateExplorerSprite(inputLine);
+                String[] temp = inputLine.split(" ");
+
+                //Determine message type and update accordingly
+                switch (temp[0]){
+                    case "MOVE": //Message involves explorer movement
+                        explorerSprite.x = Integer.parseInt(temp[1]);
+                        explorerSprite.y = Integer.parseInt(temp[2]);
+                        break;
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -203,18 +214,6 @@ public class ExplorerClient extends JFrame implements KeyListener {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    private void updateExplorerSprite(String data) {
-        if (data.equals("MOVE_UP")) {
-            // Update explorer sprite position to move up
-        } else if (data.equals("MOVE_DOWN")) {
-            // Update explorer sprite position to move down
-        } else if (data.equals("MOVE_LEFT")) {
-            // Update explorer sprite position to move left
-        } else if (data.equals("MOVE_RIGHT")) {
-            // Update explorer sprite position to move right
         }
     }
 
@@ -274,6 +273,6 @@ public class ExplorerClient extends JFrame implements KeyListener {
             y = 0;
 
         ExplorerClient client = new ExplorerClient(serverAddress, serverPort, x, y);
-        client.start();
+        client.start(); //Start receiving data
     }
 }

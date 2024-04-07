@@ -11,12 +11,9 @@ import java.util.concurrent.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 
-public class Canvas extends JPanel implements KeyListener {
+public class Canvas extends JPanel {
     private List<Particle> particles;
-    private List<Particle> explorers;
     private List<ExplorerHandler> explorerHandlers;
-    private boolean explorerMode = false;
-    private Particle explorerSprite;
     private BufferedImage spriteImage;
     private int frameCount = 0;
     private int fps;
@@ -25,7 +22,6 @@ public class Canvas extends JPanel implements KeyListener {
     private final int HEIGHT = 720;
     private final int SPRITE_SIZE = 30;
     private JFrame frame;
-    private boolean explorerSpawned = false;
 
     private static final int PORT = 12345;
     private ServerSocket serverSocket;
@@ -41,7 +37,6 @@ public class Canvas extends JPanel implements KeyListener {
         particles = new ArrayList<>();
         explorerHandlers = new ArrayList<>();
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
-        addKeyListener(this);
         setFocusable(true);
         requestFocusInWindow();
 
@@ -81,18 +76,6 @@ public class Canvas extends JPanel implements KeyListener {
         }).start();
     }
 
-    boolean isExplorerMode() {
-        return explorerMode;
-    }
-
-    void toggleExplorerMode() {
-        explorerMode = !explorerMode;
-        if (!explorerSpawned) {
-            explorerSprite = new Particle(100, 100, 0, 0);
-            explorerSpawned = true;
-        }
-    }
-
     private void sendDataToExplorers(String data) {
         for (ExplorerHandler handler : explorerHandlers) {
             handler.sendData(data);
@@ -101,60 +84,6 @@ public class Canvas extends JPanel implements KeyListener {
 
     void removeExplorerHandler(ExplorerHandler handler) {
         explorerHandlers.remove(handler);
-    }
-
-    public void moveExplorerSprite(int dx, int dy) {
-        if (explorerSprite != null) {
-            explorerSprite.x += dx;
-            explorerSprite.y += dy;
-        }
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        if (explorerMode) {
-            int keyCode = e.getKeyCode();
-            switch (keyCode) {
-                case KeyEvent.VK_UP:
-                case KeyEvent.VK_W:
-                    if (explorerSprite.y - SPRITE_SIZE > 0) {
-                        moveExplorerSprite(0, -5);
-                        sendDataToExplorers("MOVE_UP");
-                    }
-                    break;
-                case KeyEvent.VK_DOWN:
-                case KeyEvent.VK_S:
-                    if (explorerSprite.y + SPRITE_SIZE < HEIGHT) {
-                        moveExplorerSprite(0, 5);
-                        sendDataToExplorers("MOVE_DOWN");
-                    }
-                    break;
-                case KeyEvent.VK_LEFT:
-                case KeyEvent.VK_A:
-                    if (explorerSprite.x - SPRITE_SIZE > 0) {
-                        moveExplorerSprite(-5, 0);
-                        sendDataToExplorers("MOVE_LEFT");
-                    }
-                    break;
-                case KeyEvent.VK_RIGHT:
-                case KeyEvent.VK_D:
-                    if (explorerSprite.x + SPRITE_SIZE < WIDTH) {
-                        moveExplorerSprite(5, 0);
-                        sendDataToExplorers("MOVE_RIGHT");
-                    }
-                    break;
-            }
-        }
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {}
-
-    @Override
-    public void keyReleased(KeyEvent e) {}
-
-    public void addKeyHandler(JFrame frame) {
-        frame.addKeyListener(this);
     }
 
     public void passFrame(JFrame f){
@@ -170,11 +99,7 @@ public class Canvas extends JPanel implements KeyListener {
         offscreenGraphics.setColor(Color.BLACK);
         offscreenGraphics.fillRect(0,0, WIDTH, HEIGHT);
 
-        if (explorerMode) {
-            renderExplorerMode(offscreenGraphics);
-        } else {
-            renderDeveloperMode(offscreenGraphics);
-        }
+        renderDeveloperMode(offscreenGraphics);
 
         calculateFPS();
 
@@ -183,54 +108,28 @@ public class Canvas extends JPanel implements KeyListener {
 
     private void renderDeveloperMode(Graphics offscreenGraphics) {
         offscreenGraphics.setColor(Color.GREEN);
+        //Render Particles
         for (Particle particle : particles) {
             offscreenGraphics.fillOval((int) particle.x - 5, (int) particle.y - 5, 10, 10);
         }
 
-        if (explorerSpawned && spriteImage != null) {
-            int spriteX = (int) explorerSprite.x - SPRITE_SIZE / 2;
-            int spriteY = (int) explorerSprite.y - SPRITE_SIZE / 2;
-            offscreenGraphics.drawImage(spriteImage, spriteX, spriteY, SPRITE_SIZE, SPRITE_SIZE, null);
-        }
+        //Render explorers
+        if(!explorerHandlers.isEmpty()) //Wait for explorers to join
+            for(ExplorerHandler explorerHandler : explorerHandlers){
+                if(explorerHandler.explorer == null)
+                    continue;
+                int spriteX = (int) explorerHandler.explorer.x - SPRITE_SIZE / 2;
+                int spriteY = (int) explorerHandler.explorer.y - SPRITE_SIZE / 2;
+                offscreenGraphics.drawImage(spriteImage, spriteX, spriteY, SPRITE_SIZE, SPRITE_SIZE, null);
+            }
     }
-
-    private void renderExplorerMode(Graphics g) {
-        g.setColor(Color.GREEN);
-        for (Particle particle : particles) {
-            int distanceX = (int) (particle.x - explorerSprite.x);
-            int distanceY = (int) (particle.y - explorerSprite.y);
-            if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
-                continue;
-
-            g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH) + (WIDTH/2),
-                    (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT) + (HEIGHT/2), 10, 10);
-        }
-
-        if (explorerSpawned && spriteImage != null) {
-            g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE * 10, HEIGHT / 2 - SPRITE_SIZE * 10,
-                SPRITE_SIZE*20, SPRITE_SIZE*20, null);
-        }
-    }
-            /*if(Math.abs(distanceX) > PERIPHERY_WIDTH || Math.abs(distanceY) > PERIPHERY_HEIGHT)
-                continue;
-
-            g.fillOval((int) distanceX * (WIDTH/PERIPHERY_WIDTH),
-                (int) distanceY * (HEIGHT/PERIPHERY_HEIGHT), 10, 10);
-        }
-
-        if (explorerSpawned && spriteImage != null) {
-            g.drawImage(spriteImage, WIDTH / 2 - SPRITE_SIZE * 10, HEIGHT / 2 - SPRITE_SIZE * 10,
-                SPRITE_SIZE*20, SPRITE_SIZE*20, null);*/
 
     private void updateFPS() {
         fps = frameCount;
         frameCount = 0;
         lastFPSTime = System.currentTimeMillis();
-        if(!explorerSpawned)
-            frame.setTitle("Particle Simulator | FPS: " + calculateFPS());
-        else
-            frame.setTitle("Particle Simulator | FPS: " + calculateFPS() + " | X: "
-                    + explorerSprite.x + " Y: " + explorerSprite.y);
+
+        frame.setTitle("Particle Simulator | FPS: " + calculateFPS());
     }
 
     private int calculateFPS() {
@@ -248,34 +147,29 @@ public class Canvas extends JPanel implements KeyListener {
 
     void addParticles(int n, double startX, double startY, double endX, double endY,
                       double initialAngle, double velocity) {
-        if (!explorerMode) {
-            for (int i = 0; i < n; i++) {
-                double randomX = startX + Math.random() * (endX - startX);
-                double randomY = startY + Math.random() * (endY - startY);
-                particles.add(new Particle(randomX, randomY, initialAngle, velocity));
-            }
+        for (int i = 0; i < n; i++) {
+            double randomX = startX + Math.random() * (endX - startX);
+            double randomY = startY + Math.random() * (endY - startY);
+            particles.add(new Particle(randomX, randomY, initialAngle, velocity));
         }
     }
 
     void addParticlesByAngle(int n, double startX, double startY, double velocity, double startAngle, double endAngle) {
-        if (!explorerMode) {
-            for (int i = 0; i < n; i++) {
-                double randomAngle = startAngle + Math.random() * (endAngle - startAngle);
-                particles.add(new Particle(startX, startY, randomAngle, velocity));
-            }
+        for (int i = 0; i < n; i++) {
+            double randomAngle = startAngle + Math.random() * (endAngle - startAngle);
+            particles.add(new Particle(startX, startY, randomAngle, velocity));
         }
     }
 
     void addParticlesByVelocity(int n, double startX, double startY, double angle, double startVelocity, double endVelocity) {
-        if(!explorerMode) {
-            for (int i = 0; i < n; i++) {
-                double randomVelocity = startX + Math.random() * (endVelocity - startVelocity);
-                particles.add(new Particle(startX, startY, angle, randomVelocity));
-            }
+        for (int i = 0; i < n; i++) {
+            double randomVelocity = startX + Math.random() * (endVelocity - startVelocity);
+            particles.add(new Particle(startX, startY, angle, randomVelocity));
         }
     }
 
     private class ExplorerHandler extends Thread {
+        public Particle explorer; //Particle of current explorer
         private Socket socket;
         private PrintWriter out;
 
@@ -294,7 +188,37 @@ public class Canvas extends JPanel implements KeyListener {
             try {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String inputLine;
+                boolean spawned = false;
+
                 while ((inputLine = in.readLine()) != null) {
+                    if(!spawned){
+                        //Get starting coords of explorer
+                        String[] temp = inputLine.split(" ");
+                        //Create explorer
+                        explorer = new Particle(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]) , 0, 0);
+                        spawned = true;
+                    }
+
+                    //Read movement inputs
+                    switch (inputLine){
+                        case "MOVE_UP":{
+                            moveExplorerSprite(0, -5);
+                            break;
+                        }
+                        case "MOVE_DOWN":{
+                            moveExplorerSprite(0, 5);
+                            break;
+                        }
+                        case "MOVE_LEFT":{
+                            moveExplorerSprite(-5, 0);
+                            break;
+                        }
+                        case "MOVE_RIGHT":{
+                            moveExplorerSprite(5, 0);
+                            break;
+                        }
+                    }
+
                     if (inputLine.equals("EXIT")) {
                         System.out.println("Client disconnected.");
                         removeExplorerHandler(this);
@@ -303,6 +227,16 @@ public class Canvas extends JPanel implements KeyListener {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+                removeExplorerHandler(this);
+            }
+        }
+
+        public void moveExplorerSprite(int dx, int dy) {
+            if (explorer != null) {
+                explorer.x += dx;
+                explorer.y += dy;
+                //send coords data back to client
+                //sendData("MOVE" + explorer.x + " " + explorer.y);
             }
         }
 
