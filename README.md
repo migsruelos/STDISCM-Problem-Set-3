@@ -1,4 +1,4 @@
-# Problem Set 2 : Particle Simulation - Explorer Mode
+# Problem Set 3 : Distributed Particle Simulator
 
 This is a particle simulation application that has a client-server communication method implemented. It operates in two modes: Developer(Server) and Explorer(Client). In Developer Mode, users can add particles to a 1280x720 pixel canvas, specifying their initial position, angle, and velocity. These particles move in straight lines and bounce off the canvas walls without changing speed, as all collisions are elastic. Particles can be added individually or in batches, with uniform distribution across positions, angles, or velocities. In Explorer Mode, a sprite is introduced that the user can move using various controls. The canvas zooms in on the sprite’s immediate surroundings, showing a 19x33 pixel area around it. As the sprite moves, any particles that come into this periphery are displayed until they exit. For both modes, the program must display all particles within the respective viewing areas and show an FPS counter every 0.5 seconds.
 
