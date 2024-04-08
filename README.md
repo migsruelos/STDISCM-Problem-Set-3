@@ -17,7 +17,7 @@ This is a particle simulation application that has a client-server communication
   * This will open the Explorer's window with 1280 x 720 pixel canvas. The coordinates (0, 0) are the southwest corner of the canvas, and the coordinates (1280, 720) are the northeast corner.
     
 * In developer mode, three buttons and the canvas for the simulation will be presented.
-    * Three of the buttons are for the user to add particles.
+    * The three buttons are for the user to add particles.
       * The X and Y inputs from the user are read as pixel coordinates.
       * When adding particles using methods addParticles, addParticlesByAngle, and addParticlesByVelocity, the angle parameter represents the initial angle of the particle in degrees.
       * Parameters startX and startY specify the minimum pixel coordinates for the starting position of the particles, while endX and endY specify the pixel coordinates for the ending position.
