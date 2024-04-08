@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="STDISCM-Problem-Set-3:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/STDISCM_Problem_Set_3_jar</output-path>
+    <root id="archive" name="STDISCM-Problem-Set-3.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/STDISCM-Problem-Set-3-main/Particle-Simulator/Particle_Simulator/src/sprite/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="STDISCM-Problem-Set-3" />
+    </root>
+  </artifact>
+</component>

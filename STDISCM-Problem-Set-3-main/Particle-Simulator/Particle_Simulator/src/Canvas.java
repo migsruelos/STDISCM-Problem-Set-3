@@ -40,7 +40,7 @@ public class Canvas extends JPanel {
 
         // Load the sprite image
         try {
-            spriteImage = ImageIO.read(new File("STDISCM-Problem-Set-3-main/Particle-Simulator/Particle_Simulator/src/sprite/sprite.png"));
+            spriteImage = ImageIO.read(getClass().getResource("/sprite/sprite.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }

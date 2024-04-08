@@ -48,7 +48,7 @@ public class ExplorerClient extends JFrame implements KeyListener {
             requestFocusInWindow();
 
             try {
-                spriteImage = ImageIO.read(new File("STDISCM-Problem-Set-3-main/Particle-Simulator/Particle_Simulator/src/sprite/sprite.png"));
+                spriteImage = ImageIO.read(getClass().getResource("/sprite/sprite.png"));
             } catch (IOException e) {
                 e.printStackTrace();
             }
